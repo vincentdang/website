@@ -101,6 +101,7 @@ function retrieveProjectDataFromCollection(){
                 "project": {
                             'id': "{{project.id | default: 0}}",
                             'identification': {{project.identification | default: 0}},
+                            'secondRepoId': {{project.secondRepoId | default: 0}},
                             "status": "{{ project.status }}"
                             {%- if project.image -%},
                             "image": '{{ project.image }}'
@@ -118,7 +119,7 @@ function retrieveProjectDataFromCollection(){
                             "partner": `{{ project.partner }}`
                             {%- endif -%}
                             {%- if project.tools -%},
-                            "tools": `{{ project.tools }}`
+                            "tools": {{ project.tools | jsonify }}
                             {%- endif -%}
                             {%- if project.looking -%},
                             "looking": {{ project.looking | jsonify }}
@@ -142,7 +143,13 @@ function retrieveProjectDataFromCollection(){
         const { project } = data;
         const matchingProject = projectLanguagesArr.find(x=> x.id === project.identification);
         if(matchingProject) {
-            project.languages = matchingProject.languages
+            project.languages = matchingProject.languages;
+            if(project.secondRepoId != 0){
+                const secMatchingProject = projectLanguagesArr.find(x=> x.id === project.secondRepoId);
+                const langArr = [...matchingProject.languages, ...secMatchingProject.languages];
+                let set = new Set(langArr);
+                project.languages = Array.from(set);
+            }
         }
     })
     return projectData;
@@ -522,9 +529,12 @@ function projectCardComponent(project){
                 `
                 <div class="project-tools">
                 <strong>Tools: </strong>
-                ${ project.tools }
+                ${(Array.isArray(project.tools) ? project.tools : project.tools.split(','))
+                    .map(tool => `<p class='project-card-field-inline'> ${tool}</p>`)
+                    .join(", ")
+                }
                 </div>
-                `:""
+                `: ""
                 }
 
                 ${project.looking ? "" : ""
